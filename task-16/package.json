@@ -1,0 +1,9 @@
+{
+  "name": "task-16",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "moment": "^2.29.4"
+  }
+}

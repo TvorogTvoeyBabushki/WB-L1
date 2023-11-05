@@ -10,7 +10,7 @@ const functions = [
   },
   function (x, y) {
     return x / y
-  },
+  }
 ]
 
 const applyFunctionsVar1 = (arr, ...rest) => {
@@ -23,7 +23,7 @@ const applyFunctionsVar1 = (arr, ...rest) => {
 
 const applyFunctionsVar2 = (arr) => {
   return function (...args) {
-    return arr.map((fn) => fn(...args))
+    return arr.map((fn) => fn(...args)) // или fn.apply(null, args))
   }
 }
 

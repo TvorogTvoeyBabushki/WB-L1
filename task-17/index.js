@@ -3,7 +3,7 @@ const addressList = document.querySelector('#addressList')
 // переменная, которая будет хранить нашу карту
 let map
 
-const initMap = async coords => {
+const initMap = async (coords) => {
   // Промис `ymaps3.ready` будет зарезолвлен, когда загрузятся все компоненты основного модуля API
   await ymaps3.ready
 
@@ -29,7 +29,7 @@ const initMap = async coords => {
     map = null
   }
 
-  // Иницилиазируем карту
+  // Инициализируем карту
   map = new YMap(
     // Передаём ссылку на HTMLElement контейнера
     document.getElementById('map'),
@@ -77,14 +77,14 @@ const initMap = async coords => {
   searchField.value = ''
 
   // функция для поиска объектов, которая работает с задержкой 0.5 сек
-  const handleSearch = debounce(async e => {
+  const handleSearch = debounce(async (e) => {
     // получаем данные в количестве 10 штук
     const response = await ymaps3.search({
       text: e.target.value,
       limit: 10
     })
 
-    response.forEach(address => {
+    response.forEach((address) => {
       // создаем элемент списка и ссылку
       const liEl = document.createElement('li')
       const linkEl = document.createElement('a')
@@ -99,7 +99,7 @@ const initMap = async coords => {
       addressList.append(liEl)
 
       // вешаем событие клика на ссылку
-      linkEl.addEventListener('click', e => {
+      linkEl.addEventListener('click', (e) => {
         // убираем дефолтное поведение
         e.preventDefault()
         handleDeleteListItem()
@@ -119,14 +119,14 @@ const initMap = async coords => {
 // функция, которая удаляет все элементы списка
 const handleDeleteListItem = () => {
   const liEl = addressList.querySelectorAll('li')
-  liEl.forEach(li => {
+  liEl.forEach((li) => {
     addressList.removeChild(li)
   })
 }
 
 // функция декоратор, которая вызывает другую функцию с определенной задержкой
 const debounce = (func, delay) => {
-  let timerId // переменая, которая будет хранить таймаут
+  let timerId // переменная, которая будет хранить таймаут
 
   return (...args) => {
     handleDeleteListItem()

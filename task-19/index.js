@@ -1,19 +1,22 @@
 // Указываем параметры для запроса wall.get
 const ownerId = '-56169357' // id паблика
-const count = 10 // количество постов
+let count = 10 // количество постов
+let offset = localStorage.getItem('posts')
+  ? JSON.parse(localStorage.getItem('posts')).length
+  : 0 // смещение количества постов
 const access_token =
   'a3444deca3444deca3444dec83a052795caa344a3444decc60ca8551082ea7c81a0c97c'
 
 // Функция для создания элементов списка постов
-function createPostElement(post) {
+const createPostElement = post => {
   const postEl = document.createElement('div')
   const textWrapper = document.createElement('div')
   const imgsWrapper = document.createElement('div')
-  const likesWrapper = document.createElement('div')
+  const footerWrapper = document.createElement('div')
 
   textWrapper.append(post.text)
 
-  post.attachments.forEach((attachment) => {
+  post.attachments.forEach(attachment => {
     if (attachment.photo) {
       const imgEl = document.createElement('img')
       const imgWrapper = document.createElement('div')
@@ -33,13 +36,10 @@ function createPostElement(post) {
 
       imgWrapper.append(imgEl)
       imgsWrapper.append(imgWrapper)
-    } else {
-      console.log('qwe')
-      return
     }
   })
 
-  likesWrapper.innerHTML = `
+  footerWrapper.innerHTML = `
     <div>
       <div>
         <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -65,44 +65,56 @@ function createPostElement(post) {
   postEl.append(
     textWrapper,
     post.attachments.length ? imgsWrapper : '',
-    likesWrapper
+    footerWrapper
   )
 
   return postEl
 }
 
 // Функция для отображения списка постов
-function renderPosts(posts) {
-  const widgetElement = document.getElementById('vk-widget')
-  posts.forEach((post) => {
-    const postElement = createPostElement(post)
-    widgetElement.appendChild(postElement)
+const renderPosts = posts => {
+  const widgetElement = document.querySelector('#vk-widget')
+  posts.forEach(post => {
+    widgetElement.append(createPostElement(post))
   })
 }
 
-function jsonpRequest(url, callback) {
+const jsonpRequest = (url, callback) => {
+  const postData = JSON.parse(localStorage.getItem('posts')) || []
   const script = document.createElement('script')
   script.src = url
 
-  window[callback] = (data) => {
+  window[callback] = data => {
     // Обрабатываем полученные данные
-    localStorage.setItem('posts', JSON.stringify(data.response.items))
-    const posts = data.response.items
-    renderPosts(posts)
+    postData.push(...data.response.items)
+    localStorage.setItem('posts', JSON.stringify(postData))
+
+    renderPosts(data.response.items)
     delete window[callback]
     document.body.removeChild(script)
   }
-  document.body.appendChild(script)
+  document.body.append(script)
 }
 
-function checkPosition() {
+const throttle = (func, delay) => {
+  let timer = null
+
+  return (...args) => {
+    if (timer) return
+
+    timer = setTimeout(() => {
+      func(...args)
+
+      clearTimeout(timer)
+      timer = null
+    }, delay)
+  }
+}
+
+const checkPosition = throttle(() => {
   // Нам потребуется знать высоту документа и высоту экрана:
-  const height = document.body.offsetHeight
-  const screenHeight = window.innerHeight
-  console.log(height)
-  // https://doka.guide/js/infinite-scroll/
-  // Они могут отличаться: если на странице много контента,
-  // высота документа будет больше высоты экрана (отсюда и скролл).
+  const heightBody = document.body.clientHeight
+  const screenHeight = document.documentElement.clientHeight
 
   // Записываем, сколько пикселей пользователь уже проскроллил:
   const scrolled = window.scrollY
@@ -110,19 +122,23 @@ function checkPosition() {
   // Обозначим порог, по приближении к которому
   // будем вызывать какое-то действие.
   // В нашем случае — четверть экрана до конца страницы:
-  const threshold = height - screenHeight / 4
+  const threshold = heightBody - screenHeight / 4
 
   // Отслеживаем, где находится низ экрана относительно страницы:
   const position = scrolled + screenHeight
 
   if (position >= threshold) {
     // Если мы пересекли полосу-порог, вызываем нужное действие.
+    offset += 10
+    jsonpRequest(
+      `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&offset=${offset}&access_token=${access_token}&v=5.154&callback=getPosts`,
+      'getPosts'
+    )
   }
-}
-;(() => {
-  window.addEventListener('scroll', checkPosition)
-  window.addEventListener('resize', checkPosition)
-})()
+}, 250)
+
+window.addEventListener('scroll', checkPosition)
+window.addEventListener('resize', checkPosition)
 
 // Вызываем функцию для получения и отображения списка постов
 if (localStorage.getItem('posts')) {

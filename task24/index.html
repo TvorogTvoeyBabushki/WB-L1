@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+
+    <style>
+      table {
+        table-layout: fixed;
+        width: 100%;
+        border-collapse: collapse;
+        border: 3px solid purple;
+
+        > tr:first-child {
+          > th:first-child {
+            width: 5%;
+          }
+
+          > th:nth-child(5) {
+            width: 15%;
+          }
+
+          > th {
+            > div {
+              > button {
+                cursor: pointer;
+                background-color: transparent;
+                border: none;
+              }
+
+              > button:first-child {
+                transform: rotate(180deg);
+              }
+            }
+          }
+        }
+
+        > tr {
+          > th,
+          td {
+            padding: 20px;
+            text-align: center;
+          }
+        }
+      }
+
+      nav {
+        display: flex;
+        justify-content: center;
+
+        > ul {
+          display: flex;
+          gap: 20px;
+          list-style: none;
+
+          > li {
+            > a {
+              color: black;
+              text-decoration: none;
+            }
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table id="table"></table>
+
+    <script src="./index.js"></script>
+  </body>
+</html>

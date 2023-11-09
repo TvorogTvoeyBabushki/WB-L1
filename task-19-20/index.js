@@ -1,11 +1,19 @@
 // Указываем параметры для запроса wall.get
 const ownerId = '-56169357' // id паблика
-let count = 10 // количество постов
-let offset = localStorage.getItem('posts')
-  ? JSON.parse(localStorage.getItem('posts')).length
-  : 0 // смещение количества постов
+const count = 10 // количество постов
 const access_token =
   'a3444deca3444deca3444dec83a052795caa344a3444decc60ca8551082ea7c81a0c97c'
+
+const parsePostsDataLS = () => {
+  if (localStorage.getItem('posts')) {
+    return JSON.parse(localStorage.getItem('posts'))
+  } else {
+    return []
+  }
+}
+let offset = localStorage.getItem('posts')
+  ? parsePostsDataLS()[parsePostsDataLS().length - 1].offset
+  : 0 // смещение количества постов
 
 // Функция для создания элементов списка постов
 const createPostElement = post => {
@@ -72,24 +80,30 @@ const createPostElement = post => {
 }
 
 // Функция для отображения списка постов
+const widgetElement = document.querySelector('#vk-widget')
 const renderPosts = posts => {
-  const widgetElement = document.querySelector('#vk-widget')
   posts.forEach(post => {
     widgetElement.append(createPostElement(post))
   })
 }
 
+const updatePosts = post => {
+  widgetElement.insertAdjacentElement('afterbegin', createPostElement(post))
+}
+
 const jsonpRequest = (url, callback) => {
-  const postData = JSON.parse(localStorage.getItem('posts')) || []
+  const postData = parsePostsDataLS()
   const script = document.createElement('script')
   script.src = url
 
   window[callback] = data => {
     // Обрабатываем полученные данные
-    postData.push(...data.response.items)
+    const posts = data.response.items
+    posts[posts.length - 1].offset = offset
+    postData.push(...posts)
     localStorage.setItem('posts', JSON.stringify(postData))
 
-    renderPosts(data.response.items)
+    renderPosts(posts)
     delete window[callback]
     document.body.removeChild(script)
   }
@@ -112,24 +126,25 @@ const throttle = (func, delay) => {
 }
 
 const checkPosition = throttle(() => {
-  // Нам потребуется знать высоту документа и высоту экрана:
-  const heightBody = document.body.clientHeight
+  // Нам потребуется знать высоту элемента(где будет расположен виджет) и высоту экрана:
+  const heightWidget = widgetElement.scrollHeight
   const screenHeight = document.documentElement.clientHeight
 
   // Записываем, сколько пикселей пользователь уже проскроллил:
-  const scrolled = window.scrollY
+  const scrolled = widgetElement.scrollTop
 
   // Обозначим порог, по приближении к которому
   // будем вызывать какое-то действие.
   // В нашем случае — четверть экрана до конца страницы:
-  const threshold = heightBody - screenHeight / 4
+  const threshold = heightWidget - screenHeight / 4
 
   // Отслеживаем, где находится низ экрана относительно страницы:
-  const position = scrolled + screenHeight
+  const position = scrolled + screenHeight // нижняя граница экрана
 
   if (position >= threshold) {
     // Если мы пересекли полосу-порог, вызываем нужное действие.
     offset += 10
+    calculateLocalStorageSize()
     jsonpRequest(
       `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&offset=${offset}&access_token=${access_token}&v=5.154&callback=getPosts`,
       'getPosts'
@@ -137,15 +152,19 @@ const checkPosition = throttle(() => {
   }
 }, 250)
 
-window.addEventListener('scroll', checkPosition)
+widgetElement.addEventListener('scroll', checkPosition)
 window.addEventListener('resize', checkPosition)
 
 // Вызываем функцию для получения и отображения списка постов
 if (localStorage.getItem('posts')) {
-  renderPosts(JSON.parse(localStorage.getItem('posts')))
+  renderPosts(parsePostsDataLS())
 } else {
   jsonpRequest(
     `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&access_token=${access_token}&v=5.154&callback=getPosts`,
     'getPosts'
   )
 }
+// jsonpRequest(
+//   `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&access_token=${access_token}&v=5.154&callback=getPosts`,
+//   'getPosts'
+// )

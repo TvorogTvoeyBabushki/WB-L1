@@ -10,6 +10,7 @@
         background-color: #141414;
         padding: 0;
         margin: 0;
+        box-sizing: border-box;
       }
 
       .vk-widget {
@@ -17,14 +18,16 @@
         flex-direction: column;
         align-items: center;
         gap: 10px;
+        height: 100vh;
+        overflow: auto;
         max-width: 550px;
-        margin: 20px auto 0;
+        margin: 0 auto;
 
         > div {
           display: flex;
           flex-direction: column;
           gap: 10px;
-          width: 510px;
+          width: 508px;
           padding: 20px;
           background-color: #222222;
           border: 1px solid #363738;
@@ -93,5 +96,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="./index.js"></script>
+    <script src="./task20.js"></script>
   </body>
 </html>

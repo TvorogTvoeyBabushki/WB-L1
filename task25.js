@@ -1,6 +1,9 @@
+// находим корневой элемент
+const rootEl = document.querySelector('#task-25')
 const createAndStyleElement = (
   HTMLElement,
-  styles = [{ prop: '', value: '' }]
+  styles = [{ prop: '', value: '' }],
+  rootEl
 ) => {
   // создаем элемент
   const element = document.createElement(HTMLElement)
@@ -11,11 +14,15 @@ const createAndStyleElement = (
   })
 
   // добавляем созданный элемент в DOM
-  document.querySelector('#task-25').append(element)
+  rootEl.append(element)
 }
 
-createAndStyleElement('div', [
-  { prop: 'height', value: '200px' },
-  { prop: 'width', value: '300px' },
-  { prop: 'backgroundColor', value: 'pink' }
-])
+createAndStyleElement(
+  'div',
+  [
+    { prop: 'height', value: '200px' },
+    { prop: 'width', value: '300px' },
+    { prop: 'backgroundColor', value: 'pink' }
+  ],
+  rootEl
+)

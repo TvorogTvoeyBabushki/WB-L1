@@ -1,26 +1,72 @@
-const convertStringToJson = (json) => {
+const data = {
+  name: 'Egor',
+  age: [25, 30, 'text'],
+  city: 'Moscow'
+}
+const data2 = [
+  {
+    name: 'Egor',
+    age: [25]
+  },
+  {
+    name: 'Vany',
+    age: 34,
+    address: {
+      city: 'Moscow',
+      house: 60,
+      country: 'Russia'
+    }
+  },
+  {
+    name: 'Any',
+    age: null
+  }
+]
+// функция конвертации строки в объект без вложенности
+const parseJson = json => {
   // если входные данные не строка, то выходим из функции и возвращаем json
   if (typeof json !== 'string') {
     return json
   }
 
-  const isArray = json[0] === '[' ? true : false // проверка на массив
+  // проверка на пустую строку
+  if (json.length === 0) {
+    throw new Error('Пустая строка')
+  }
 
-  const iterationPairs = (pair, obj, object = null) => {
+  // проверка на корректность начала и конца объекта
+  if (json[0] !== '{' || json[json.length - 1] !== '}') {
+    throw new Error(
+      'Строка должна начинаться и заканчиваться фигурными скобками'
+    )
+  }
+  // убираем фигурные скобки и запятые в [] скобках
+  json = json.replace(/,(?=[^\[]*\])/g, ' ').slice(1, -1)
+
+  const pairs = json.split(',') // разбиваем на пары
+  const obj = {}
+
+  pairs.forEach(pair => {
     const parts = pair.split(':') // разбиваем на свойства
-    const key = parts[0].slice(1, -1).trim() // забираем ключ
-    const value = parts[1] //  забираем значение
+    let key = parts[0].trim() // забираем ключ
+    const value = parts[1].trim() //  забираем значение
 
-    if (
-      value[0] === '{' &&
-      object &&
-      object.replace(/^\{/, '').includes('{') &&
-      object.includes(key)
-    ) {
-      obj[key] = convertStringToJson(object.split('{')[1].replaceAll('}', ''))
-
-      return
+    // проверка на корректность количества элементов в паре
+    if (parts.length !== 2) {
+      throw new Error(`Некорректная пара ключ-значение: ${pair}`)
     }
+
+    // проверка на пустые ключи и значения
+    if (key === '' || value === '') {
+      throw new Error(`Пустой ключ или значение в паре: ${pair}`)
+    }
+
+    // Проверка на кавычки в ключе
+    if (key[0] !== '"' || key[key.length - 1] !== '"') {
+      throw new Error(`Неправильные кавычки в ключе: ${key}`)
+    }
+
+    key = key.slice(1, -1)
 
     // проверка на тип данных
     if (value === 'null') {
@@ -34,74 +80,31 @@ const convertStringToJson = (json) => {
     } else if (!isNaN(value)) {
       obj[key] = +value
     } else if (value[0] === '[') {
-      obj[key] = [value.split(1, -1)]
+      obj[key] = value
+        .slice(1, -1)
+        .split(' ')
+        .map(item => (isNaN(item) ? item.slice(1, -1) : +item))
     } else {
-      throw new Error('Некорректный тип значения: ' + value)
+      throw new Error(`Некорректный тип значения: ${value}`)
     }
-  }
+  })
 
-  if (isArray) {
-    // удаление скобок в начеле и конце и деление строки на отдельные объекты
-    const objects = json.slice(1, -1).split('},{')
-    const newArray = [] // создание нового массива объектов
-
-    // обработка каждого объекта и добавление его в новый массив
-    objects.forEach((object) => {
-      // убираем фигурные скобки в начале и в конце строки и разбиваем на пары
-      const pairs = object.replace(/^\{|}$/, '').split(',')
-      const obj = {}
-
-      pairs.forEach((pair) => {
-        iterationPairs(pair, obj, object)
-      })
-
-      newArray.push(obj) // добавляем объект в массив
-    })
-
-    return newArray
-  } else {
-    if (json[0] === '{') {
-      json = json.slice(1, -1) // убираем фигурные скобки если приходит объект
-    }
-
-    const pairs = json.split(',') // разбиваем на пары
-    const obj = {}
-
-    pairs.forEach((pair) => {
-      iterationPairs(pair, obj)
-    })
-
-    return obj
-  }
+  return obj
 }
-
-const data = {
-  name: 'Egor',
-  age: 25,
+// функция конвертации строки в объект с вложенностью
+const parseJsonDeepNesting = json => {
+  // если входные данные не строка, то выходим из функции и возвращаем json
+  if (typeof json !== 'string') {
+    return json
+  }
+  // передаем строку в анонимную функцию, которая будет возвращать нам объект
+  const fn = new Function(`return ${json}`)
+  return fn()
 }
-const data2 = [
-  {
-    name: 'Egor',
-    age: [25],
-  },
-  {
-    name: 'Vany',
-    age: 34,
-    address: {
-      city: 'Moscow',
-      house: 60,
-      country: 'Russia',
-    },
-  },
-  {
-    name: 'Any',
-    age: null,
-  },
-]
-
+// отлавливаем ошибки, если некоректные данные
 try {
-  console.log(convertStringToJson(JSON.stringify(data)))
-  console.log(convertStringToJson(JSON.stringify(data2)))
+  console.log(parseJson(JSON.stringify(data)))
+  console.log(parseJsonDeepNesting(JSON.stringify(data2)))
 } catch (error) {
   console.error(error.message)
 }

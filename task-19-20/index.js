@@ -1,9 +1,11 @@
-// Указываем параметры для запроса wall.get
-const ownerId = '-56169357' // id паблика
+// указываем параметры для запроса wall.get
+const ownerId = '-22751485' // id паблика  -56169357 -22751485
 const count = 10 // количество постов
-const access_token =
+const accessToken =
   'a3444deca3444deca3444dec83a052795caa344a3444decc60ca8551082ea7c81a0c97c'
-
+// для проверки первых постов
+let isNewPosts = true
+// парсим данные с хранилища
 const parsePostsDataLS = () => {
   if (localStorage.getItem('posts')) {
     return JSON.parse(localStorage.getItem('posts'))
@@ -11,25 +13,28 @@ const parsePostsDataLS = () => {
     return []
   }
 }
+// смещение количества постов, которое потом передаем в запрос
 let offset = localStorage.getItem('posts')
   ? parsePostsDataLS()[parsePostsDataLS().length - 1].offset
-  : 0 // смещение количества постов
+  : 0
 
-// Функция для создания элементов списка постов
+// функция для создания элементов списка постов
 const createPostElement = post => {
+  // создаем элементы
   const postEl = document.createElement('div')
   const textWrapper = document.createElement('div')
   const imgsWrapper = document.createElement('div')
+  const videoWrapper = document.createElement('div')
   const footerWrapper = document.createElement('div')
 
   textWrapper.append(post.text)
-
-  post.attachments.forEach(attachment => {
-    if (attachment.photo) {
+  //создаем изображение/видео и задаем стили
+  post.attachments.forEach(({ photo, video }) => {
+    if (photo) {
       const imgEl = document.createElement('img')
       const imgWrapper = document.createElement('div')
 
-      imgEl.setAttribute('src', `${attachment.photo.sizes[2].url}`)
+      imgEl.setAttribute('src', `${photo.sizes[2].url}`)
       imgEl.setAttribute('alt', 'фото')
 
       if (post.attachments.length > 5) {
@@ -45,8 +50,24 @@ const createPostElement = post => {
       imgWrapper.append(imgEl)
       imgsWrapper.append(imgWrapper)
     }
-  })
 
+    if (video) {
+      const linkEl = document.createElement('a')
+      const videoEl = document.createElement('video')
+
+      linkEl.setAttribute(
+        'href',
+        `https://vk.com/video${video.owner_id}_${video.id}`
+      )
+      videoEl.setAttribute('controls', '')
+      videoEl.setAttribute('muted', 'muted')
+      videoEl.setAttribute('width', '508')
+      videoEl.setAttribute('poster', `${video.image[3].url}`)
+      linkEl.append(videoEl)
+      videoWrapper.append(linkEl)
+    }
+  })
+  // наполняем содержимым нижнюю часть поста
   footerWrapper.innerHTML = `
     <div>
       <div>
@@ -69,47 +90,130 @@ const createPostElement = post => {
       ${moment(new Date(post.date * 1000)).format('D MMM YYYY')}
     </div>
   `
-
+  // добавляем всё в наш главный элемент
   postEl.append(
     textWrapper,
     post.attachments.length ? imgsWrapper : '',
+    post.attachments.length ? videoWrapper : '',
     footerWrapper
   )
 
   return postEl
 }
-
-// Функция для отображения списка постов
+// находим корневой див
 const widgetElement = document.querySelector('#vk-widget')
+// функция для отображения списка постов
 const renderPosts = posts => {
   posts.forEach(post => {
     widgetElement.append(createPostElement(post))
   })
 }
+// функция для отображения новых постов
+const updatePosts = (posts, isPinned) => {
+  // находим закрепленный пост и от него соседа
+  if (isPinned) {
+    const firstEl = widgetElement.firstChild
+    const siblingFirstEl = firstEl.nextSibling
 
-const updatePosts = post => {
-  widgetElement.insertAdjacentElement('afterbegin', createPostElement(post))
+    posts.forEach(post => {
+      // добавляем перед последним постом новый пост
+      siblingFirstEl.before(createPostElement(post))
+    })
+    return
+  }
+
+  posts.forEach(post => {
+    // добавляем перед последним постом новый пост
+    widgetElement.insertAdjacentElement('afterbegin', createPostElement(post))
+  })
 }
-
+// функция, которая делает запрос на другой домен и возвращает данные
 const jsonpRequest = (url, callback) => {
   const postData = parsePostsDataLS()
   const script = document.createElement('script')
   script.src = url
 
   window[callback] = data => {
-    // Обрабатываем полученные данные
+    // обрабатываем полученные данные
     const posts = data.response.items
-    posts[posts.length - 1].offset = offset
-    postData.push(...posts)
-    localStorage.setItem('posts', JSON.stringify(postData))
+    const newPosts = []
+    const maxSizeStore = 5 * 1024 * 1024
 
-    renderPosts(posts)
+    if (isNewPosts && localStorage.getItem('posts')) {
+      // проверка на новые посты при перезагрузке страницы
+      // без закрепленного поста и с закрепленным постом
+      if (
+        (posts[0].id !== postData[0]?.id && !posts[0].is_pinned) ||
+        (posts[1].id !== postData[1]?.id && posts[0].is_pinned)
+      ) {
+        for (let i = 0; i < posts.length; i++) {
+          // пропускаем первый пост, тк он закреплён
+          if (i === 0 && posts[0].is_pinned) continue
+          // если пост есть в стор, то останавливаем цикл
+          if (
+            (posts[i].id === postData[0]?.id && !posts[0].is_pinned) ||
+            (posts[i].id === postData[1]?.id && posts[0].is_pinned)
+          ) {
+            break
+          }
+          // добавляем в массив новый пост
+          newPosts.push(posts[i])
+        }
+        // отрисовываем новые посты
+        // добавляем новые данные в массив с данными из стора
+        updatePosts(newPosts, posts[0].is_pinned)
+        postData.unshift(...newPosts)
+        // проверка на переполнение стора
+        for (let i = 0; i < newPosts.length; i++) {
+          const currentStoreSize =
+            (JSON.stringify(postData).length + 'posts'.length) * 2
+          //удаляем пост, если стор переполнен
+          if (currentStoreSize > maxSizeStore) {
+            const lastPost = widgetElement.lastChild
+
+            widgetElement.removeChild(lastPost)
+            postData.pop()
+          } else {
+            break
+          }
+        }
+      }
+
+      // обновляем лайки и комментарии у постов
+      postData.forEach(postLS => {
+        posts.forEach(post => {
+          if (postLS.id === post.id) {
+            postLS.likes.count = post.likes.count
+            postLS.comments.count = post.comments.count
+          }
+        })
+      })
+      // кэшируем данные
+      localStorage.setItem('posts', JSON.stringify(postData))
+    }
+    // проверка на первую загрузку данных и загрузку новых данных
+    if ((isNewPosts && !localStorage.getItem('posts')) || !isNewPosts) {
+      if (!isFullTotalSizeStore) {
+        // проверка на заполненный стор
+        // добавляем новые данные в массив с данными из стора
+        posts.forEach(post => {
+          post.offset = offset
+        })
+        postData.push(...posts)
+        // кэшируем данные
+        localStorage.setItem('posts', JSON.stringify(postData))
+      }
+      // отрисовываем данные
+      renderPosts(posts)
+    }
+    isNewPosts = false
+    // удаляем колбэк и скрипт
     delete window[callback]
     document.body.removeChild(script)
   }
   document.body.append(script)
 }
-
+// функция, которая вызывает другую функцию с определенной переодичностью
 const throttle = (func, delay) => {
   let timer = null
 
@@ -126,45 +230,46 @@ const throttle = (func, delay) => {
 }
 
 const checkPosition = throttle(() => {
-  // Нам потребуется знать высоту элемента(где будет расположен виджет) и высоту экрана:
+  // нам потребуется знать высоту элемента(где будет расположен виджет)
+  // и высоту видимой части экрана:
   const heightWidget = widgetElement.scrollHeight
   const screenHeight = document.documentElement.clientHeight
 
-  // Записываем, сколько пикселей пользователь уже проскроллил:
+  // записываем, сколько пикселей пользователь уже проскроллил:
   const scrolled = widgetElement.scrollTop
 
   // Обозначим порог, по приближении к которому
   // будем вызывать какое-то действие.
   // В нашем случае — четверть экрана до конца страницы:
+  // устанавливаем границу, при достижении которой будем отправлять новый запрос
   const threshold = heightWidget - screenHeight / 4
 
-  // Отслеживаем, где находится низ экрана относительно страницы:
-  const position = scrolled + screenHeight // нижняя граница экрана
+  // нижняя граница экрана
+  const position = scrolled + screenHeight
 
   if (position >= threshold) {
-    // Если мы пересекли полосу-порог, вызываем нужное действие.
+    // увеличиваем смещение на 10
     offset += 10
+    // выводим в консоль данные по стору и делаем запрос на новые данные
     calculateLocalStorageSize()
     jsonpRequest(
-      `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&offset=${offset}&access_token=${access_token}&v=5.154&callback=getPosts`,
+      `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&offset=${offset}&access_token=${accessToken}&v=5.154&callback=getPosts`,
       'getPosts'
     )
   }
 }, 250)
-
+// события скрола и изменения размеров
 widgetElement.addEventListener('scroll', checkPosition)
 window.addEventListener('resize', checkPosition)
 
-// Вызываем функцию для получения и отображения списка постов
+// вызываем функцию для получения и отображения новых постов
+jsonpRequest(
+  `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${
+    offset ? offset + 10 : count
+  }&access_token=${accessToken}&v=5.154&callback=getPosts`,
+  'getPosts'
+)
+// отображаем закэшированные посты
 if (localStorage.getItem('posts')) {
   renderPosts(parsePostsDataLS())
-} else {
-  jsonpRequest(
-    `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&access_token=${access_token}&v=5.154&callback=getPosts`,
-    'getPosts'
-  )
 }
-// jsonpRequest(
-//   `https://api.vk.com/method/wall.get?owner_id=${ownerId}&count=${count}&access_token=${access_token}&v=5.154&callback=getPosts`,
-//   'getPosts'
-// )

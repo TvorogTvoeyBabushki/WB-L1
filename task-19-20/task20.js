@@ -1,3 +1,6 @@
+// переменная для проверки заполненного стора
+let isFullTotalSizeStore = false
+
 const calculateLocalStorageSize = () => {
   // переменная, которая будет хранить размер стора
   let totalSizeStore = 0
@@ -16,15 +19,9 @@ const calculateLocalStorageSize = () => {
     `Объем занятой памяти: ${totalSizeStore} байт / Максимальный размер хранилища: ${maxSizeStore} байт`
   )
   // проверка на заполнения стора
-  let slicePosts = 10
-  if (totalSizeStore > 100_000) {
-    const postData = JSON.parse(localStorage.getItem('posts')) || []
-    const updatePostData = postData.slice(slicePosts)
-
-    localStorage.setItem('posts', JSON.stringify(updatePostData))
-    slicePosts += 10
-    // сделать переменную и передать в индекс и там уже взаимодействовать с данными
-    // isFullTotalSizeStore = true
-    // нужно в обратную сторону сделать, убирать с конца, если появились новые посты
+  if (totalSizeStore > maxSizeStore) {
+    isFullTotalSizeStore = true
+    return
   }
+  isFullTotalSizeStore = false
 }

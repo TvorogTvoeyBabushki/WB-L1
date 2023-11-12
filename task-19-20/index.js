@@ -174,14 +174,14 @@ const jsonpRequest = (url, callback) => {
             (JSON.stringify(postData).length + 'posts'.length) * 2
           //удаляем пост, если стор переполнен
           if (currentStoreSize > maxSizeStore) {
-            const lastPost = widgetElement.lastChild
-
-            widgetElement.removeChild(lastPost)
             postData.pop()
           } else {
             break
           }
         }
+        // удаляем из dom последний пост
+        const lastPost = widgetElement.lastChild
+        widgetElement.removeChild(lastPost)
       }
 
       // обновляем лайки и комментарии у постов

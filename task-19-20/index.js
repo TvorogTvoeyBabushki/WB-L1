@@ -68,6 +68,11 @@ const createPostElement = (post) => {
     }
   })
   // наполняем содержимым нижнюю часть поста
+  const date = new Date(post.date * 1000)
+  const day = `${date}`.split(' ')[2]
+  const month = `${date}`.split(' ')[1]
+  const year = date.getFullYear()
+
   footerWrapper.innerHTML = `
     <div>
       <div>
@@ -87,7 +92,7 @@ const createPostElement = (post) => {
       </div>
     </div>
     <div>
-      ${moment(new Date(post.date * 1000)).format('D MMM YYYY')}
+      ${day} ${month} ${year}
     </div>
   `
   // добавляем всё в наш главный элемент

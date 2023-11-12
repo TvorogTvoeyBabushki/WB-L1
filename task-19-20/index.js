@@ -19,7 +19,7 @@ let offset = localStorage.getItem('posts')
   : 0
 
 // функция для создания элементов списка постов
-const createPostElement = post => {
+const createPostElement = (post) => {
   // создаем элементы
   const postEl = document.createElement('div')
   const textWrapper = document.createElement('div')
@@ -103,8 +103,8 @@ const createPostElement = post => {
 // находим корневой див
 const widgetElement = document.querySelector('#vk-widget')
 // функция для отображения списка постов
-const renderPosts = posts => {
-  posts.forEach(post => {
+const renderPosts = (posts) => {
+  posts.forEach((post) => {
     widgetElement.append(createPostElement(post))
   })
 }
@@ -115,14 +115,14 @@ const updatePosts = (posts, isPinned) => {
     const firstEl = widgetElement.firstChild
     const siblingFirstEl = firstEl.nextSibling
 
-    posts.forEach(post => {
+    posts.forEach((post) => {
       // добавляем перед последним постом новый пост
       siblingFirstEl.before(createPostElement(post))
     })
     return
   }
 
-  posts.forEach(post => {
+  posts.forEach((post) => {
     // добавляем перед последним постом новый пост
     widgetElement.insertAdjacentElement('afterbegin', createPostElement(post))
   })
@@ -133,7 +133,7 @@ const jsonpRequest = (url, callback) => {
   const script = document.createElement('script')
   script.src = url
 
-  window[callback] = data => {
+  window[callback] = (data) => {
     // обрабатываем полученные данные
     const posts = data.response.items
     const newPosts = []
@@ -180,8 +180,8 @@ const jsonpRequest = (url, callback) => {
       }
 
       // обновляем лайки и комментарии у постов
-      postData.forEach(postLS => {
-        posts.forEach(post => {
+      postData.forEach((postLS) => {
+        posts.forEach((post) => {
           if (postLS.id === post.id) {
             postLS.likes.count = post.likes.count
             postLS.comments.count = post.comments.count
@@ -196,7 +196,7 @@ const jsonpRequest = (url, callback) => {
       if (!isFullTotalSizeStore) {
         // проверка на заполненный стор
         // добавляем новые данные в массив с данными из стора
-        posts.forEach(post => {
+        posts.forEach((post) => {
           post.offset = offset
         })
         postData.push(...posts)

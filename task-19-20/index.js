@@ -168,20 +168,21 @@ const jsonpRequest = (url, callback) => {
         // добавляем новые данные в массив с данными из стора
         updatePosts(newPosts, posts[0].is_pinned)
         postData.unshift(...newPosts)
+        postData[postData.length - 1].offset += newPosts.length
         // проверка на переполнение стора
         for (let i = 0; i < newPosts.length; i++) {
           const currentStoreSize =
             (JSON.stringify(postData).length + 'posts'.length) * 2
           //удаляем пост, если стор переполнен
           if (currentStoreSize > maxSizeStore) {
+            // удаляем из dom последний пост
+            const lastPost = widgetElement.lastChild
+            widgetElement.removeChild(lastPost)
             postData.pop()
           } else {
             break
           }
         }
-        // удаляем из dom последний пост
-        const lastPost = widgetElement.lastChild
-        widgetElement.removeChild(lastPost)
       }
 
       // обновляем лайки и комментарии у постов

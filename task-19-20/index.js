@@ -168,7 +168,8 @@ const jsonpRequest = (url, callback) => {
         // добавляем новые данные в массив с данными из стора
         updatePosts(newPosts, posts[0].is_pinned)
         postData.unshift(...newPosts)
-        postData[postData.length - 1].offset += newPosts.length
+        offset += newPosts.length
+        console.log(offset)
         // проверка на переполнение стора
         for (let i = 0; i < newPosts.length; i++) {
           const currentStoreSize =

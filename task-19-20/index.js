@@ -34,7 +34,7 @@ const createPostElement = (post) => {
       const imgEl = document.createElement('img')
       const imgWrapper = document.createElement('div')
 
-      imgEl.setAttribute('src', `${photo.sizes[2].url}`)
+      imgEl.setAttribute('src', `${photo.sizes[3].url}`)
       imgEl.setAttribute('alt', 'фото')
 
       if (post.attachments.length > 5) {
@@ -168,8 +168,11 @@ const jsonpRequest = (url, callback) => {
         // добавляем новые данные в массив с данными из стора
         updatePosts(newPosts, posts[0].is_pinned)
         postData.unshift(...newPosts)
+        // изменяем количество сдвига постов
         offset += newPosts.length
-        console.log(offset)
+        postData.slice(-10).forEach((postLS) => {
+          postLS.offset = offset
+        })
         // проверка на переполнение стора
         for (let i = 0; i < newPosts.length; i++) {
           const currentStoreSize =
@@ -185,7 +188,6 @@ const jsonpRequest = (url, callback) => {
           }
         }
       }
-
       // обновляем лайки и комментарии у постов
       postData.forEach((postLS) => {
         posts.forEach((post) => {
